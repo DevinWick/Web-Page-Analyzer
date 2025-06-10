@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>Analysis Results</h1>
+
+    {{ if .result.Error }}
+    <div class="error">
+        <h2>Error Analyzing {{ .result.URL }}</h2>
+        <p><strong>Status Code:</strong> {{ .result.StatusCode }}</p>
+        <p><strong>Error:</strong> {{ .result.Error }}</p>
+    </div>
+    {{ else }}
+    <div class="result-section">
+        <h2>Basic Information</h2>
+        <p><strong>URL:</strong> {{ .result.URL }}</p>
+        <p><strong>HTML Version:</strong> {{ .result.HTMLVersion }}</p>
+        <p><strong>Title:</strong> {{ .result.Title }}</p>
+    </div>
+
+    <div class="result-section">
+        <h2>Headings</h2>
+        <ul>
+            {{ range $key, $value := .result.Headings }}
+            <li><strong>{{ $key }}:</strong> {{ $value }}</li>
+            {{ end }}
+        </ul>
+    </div>
+
+    <div class="result-section">
+        <h2>Links Analysis</h2>
+        <p><strong>Total Links:</strong> {{ .result.Links.TotalLinks }}</p>
+        <p><strong>Internal Links:</strong> {{ .result.Links.InternalLinks }}</p>
+        <p><strong>External Links:</strong> {{ .result.Links.ExternalLinks }}</p>
+        <p><strong>Inaccessible Links:</strong> {{ .result.Links.InaccessibleLinks }}</p>
+
+        {{ if gt .result.Links.InaccessibleLinks 0 }}
+        <h3>Inaccessible Links:</h3>
+        <ul>
+            {{ range .result.Links.InaccessibleLinksList }}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+        {{ end }}
+    </div>
+
+    <div class="result-section">
+        <h2>Login Form</h2>
+        <p>The page {{ if .result.HasLoginForm }}contains{{ else }}does not contain{{ end }} a login form.</p>
+    </div>
+    {{ end }}
+
+    <a href="/" class="back-button">Analyze Another Page</a>
+</div>
+</body>
+</html>

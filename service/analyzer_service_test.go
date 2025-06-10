@@ -48,7 +48,7 @@ func TestDetermineHTMLVersion(t *testing.T) {
 }
 
 func TestAnalyzeHeadings(t *testing.T) {
-	html := `
+	htmlStr := `
 	<html>
 		<head><title>Test</title></head>
 		<body>
@@ -60,7 +60,7 @@ func TestAnalyzeHeadings(t *testing.T) {
 	</html>
 	`
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlStr))
 	assert.NoError(t, err)
 
 	result := &model.AnalysisResult{Headings: make(map[string]int)}

@@ -158,9 +158,9 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 	}()
 
 	// Collect results from the channel
-	for url := range inaccessibleChan {
+	for inacUrl := range inaccessibleChan {
 		result.Links.InaccessibleLinks++
-		result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, url)
+		result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, inacUrl)
 	}
 }
 

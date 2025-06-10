@@ -24,6 +24,9 @@ func main() {
 	router.GET("/", handlers.IndexPathHandler)
 
 	//start server
-	router.Run(PORT)
+	err := router.Run(PORT)
+	if err != nil {
+		logger.Error("Server start Failed", err)
+	}
 	logger.Info("Server started on port %s", PORT)
 }

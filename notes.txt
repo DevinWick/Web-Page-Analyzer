@@ -1,5 +1,0 @@
-assumptions: 
-that all login forms will enclosed by <form> tag
-
-challanges
-you go to manually close db operations

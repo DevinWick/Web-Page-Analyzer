@@ -70,31 +70,36 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 }
 
 func determineHTMLVersion(rootNode *html.Node) string {
-
-	if rootNode.Type == html.DoctypeNode {
-		docType := strings.ToLower(rootNode.Data)
-		switch {
-		case strings.Contains(docType, "html 4.01"):
-			return "HTML 4.01"
-		case strings.Contains(docType, "xhtml 1.0"):
-			return "XHTML 1.0"
-		case strings.Contains(docType, "html 3.2"):
-			return "HTML 3.2"
-		case strings.TrimSpace(docType) == "html":
-			return "HTML5"
-		default:
-			return "Unknown HTML version (DOCTYPE: " + docType + ")"
-		}
-	}
-
-	// Recurse through sub nodes to find doctype
 	for c := rootNode.FirstChild; c != nil; c = c.NextSibling {
-		if version := determineHTMLVersion(c); version != "" {
-			return version
+		if c.Type == html.DoctypeNode {
+			publicID := ""
+			systemID := ""
+
+			for _, attr := range c.Attr {
+				switch strings.ToLower(attr.Key) {
+				case "public":
+					publicID = attr.Val
+				case "system":
+					systemID = attr.Val
+				}
+			}
+
+			switch {
+			case strings.Contains(publicID, "HTML 4.01"):
+				return "HTML 4.01"
+			case strings.Contains(publicID, "XHTML 1.0"):
+				return "XHTML 1.0"
+			case strings.Contains(publicID, "XHTML 1.1"):
+				return "XHTML 1.1"
+			case strings.TrimSpace(strings.ToLower(c.Data)) == "html":
+				return "HTML5"
+			default:
+				return fmt.Sprintf("Unknown HTML version (publicID: %q, systemID: %q)", publicID, systemID)
+			}
 		}
 	}
 
-	return "Unknown HTML version (DOCTYPE NOT FOUND)"
+	return "HTML5 (no DOCTYPE found, assuming HTML5)"
 }
 
 func analyzeHeadings(doc *goquery.Document, result *model.AnalysisResult) {

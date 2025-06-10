@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const linkTimeout = 5 * time.Second
+
 var logger *logrus.Entry = LOGGER.Log.WithField("pkg", "service")
 
 func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
@@ -142,7 +144,11 @@ func isInternalLink(base, target *url.URL) bool {
 }
 
 func isLinkAccessible(url string) bool {
-	resp, err := http.Head(url)
+	client := http.Client{
+		Timeout: linkTimeout,
+	}
+
+	resp, err := client.Head(url)
 	if err != nil {
 		return false
 	}

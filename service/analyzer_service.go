@@ -1,9 +1,19 @@
 package service
 
 import (
-	"errors"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
+	LOGGER "github.com/devinwick/web-page-analyzer/logger"
 	"github.com/devinwick/web-page-analyzer/model"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
+
+var logger *logrus.Entry = LOGGER.Log.WithField("pkg", "service")
 
 func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 	result := &model.AnalysisResult{
@@ -11,7 +21,146 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 		Headings: make(map[string]int),
 	}
 
-	result.StatusCode = 200
+	// get the web page
+	resp, err := http.Get(targetURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch URL: %v", err)
+	}
+	defer resp.Body.Close()
 
-	return result, errors.New("test error")
+	result.StatusCode = resp.StatusCode
+
+	if resp.StatusCode != http.StatusOK {
+		return result, fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
+	}
+
+	// Parse the HTML
+	rootNode, err := html.Parse(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %v", err)
+	}
+
+	// Analyze HTML version
+	start := time.Now()
+	result.HTMLVersion = determineHTMLVersion(rootNode)
+	logger.WithField("duration", time.Since(start)).Info("determined HTML version")
+
+	doc := goquery.NewDocumentFromNode(rootNode)
+
+	// Analyze title
+	result.Title = doc.Find("title").Text()
+
+	// Analyze headings
+	start = time.Now()
+	analyzeHeadings(doc, result)
+	logger.WithField("duration", time.Since(start)).Info("analyzeHeadings")
+
+	// Analyze links
+	start = time.Now()
+	analyzeLinks(doc, targetURL, result)
+	logger.WithField("duration", time.Since(start)).Info("analyzeLinks")
+
+	// Check for login form
+	result.HasLoginForm = checkForLoginForm(doc)
+
+	return result, nil
+}
+
+func determineHTMLVersion(rootNode *html.Node) string {
+
+	if rootNode.Type == html.DoctypeNode {
+		docType := strings.ToLower(rootNode.Data)
+		switch {
+		case strings.Contains(docType, "html 4.01"):
+			return "HTML 4.01"
+		case strings.Contains(docType, "xhtml 1.0"):
+			return "XHTML 1.0"
+		case strings.Contains(docType, "html 3.2"):
+			return "HTML 3.2"
+		case strings.TrimSpace(docType) == "html":
+			return "HTML5"
+		default:
+			return "Unknown HTML version (DOCTYPE: " + docType + ")"
+		}
+	}
+
+	// Recurse through sub nodes to find doctype
+	for c := rootNode.FirstChild; c != nil; c = c.NextSibling {
+		if version := determineHTMLVersion(c); version != "" {
+			return version
+		}
+	}
+
+	return "Unknown HTML version (DOCTYPE NOT FOUND)"
+}
+
+func analyzeHeadings(doc *goquery.Document, result *model.AnalysisResult) {
+	for i := 1; i <= 6; i++ {
+		tag := fmt.Sprintf("h%d", i)
+		count := doc.Find(tag).Length()
+		result.Headings[tag] = count
+	}
+}
+
+func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisResult) {
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return
+	}
+
+	links := doc.Find("a[href]")
+	result.Links.TotalLinks = links.Length()
+
+	links.Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if !exists {
+			return
+		}
+
+		parsedURL, err := url.Parse(href)
+		if err != nil {
+			return
+		}
+
+		// Resolve relative URLs
+		resolvedURL := base.ResolveReference(parsedURL)
+
+		if isInternalLink(base, resolvedURL) {
+			result.Links.InternalLinks++
+			if !isLinkAccessible(resolvedURL.String()) {
+				result.Links.InaccessibleLinks++
+				result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, resolvedURL.String())
+			}
+		} else {
+			result.Links.ExternalLinks++
+		}
+	})
+}
+
+func isInternalLink(base, target *url.URL) bool {
+	return target.Host == "" || target.Host == base.Host
+}
+
+func isLinkAccessible(url string) bool {
+	resp, err := http.Head(url)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode < 400
+}
+
+func checkForLoginForm(doc *goquery.Document) bool {
+	// Check for password inputs
+	if doc.Find("input[type='password']").Length() > 0 {
+		return true
+	}
+
+	// Check for common login form attributes
+	if doc.Find("form[id*='login'], form[class*='login'], form[action*='login']").Length() > 0 {
+		return true
+	}
+
+	return false
 }

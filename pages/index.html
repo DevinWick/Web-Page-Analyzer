@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Page Analyzer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>Web Page Analyzer</h1>
+    <form action="/analyze" method="POST">
+        <div class="form-group">
+            <label for="url">Enter URL to analyze:</label>
+            <input type="text" id="url" name="url" placeholder="Paste your URL here (https://testpage.com)" required>
+        </div>
+        <button type="submit">Analyze</button>
+    </form>
+    {{ if .error }}
+    <div class="error">{{ .error }}</div>
+    {{ end }}
+</div>
+</body>
+<script src="/static/main.js"></script>
+</html>

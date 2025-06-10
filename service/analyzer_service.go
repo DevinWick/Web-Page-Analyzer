@@ -10,10 +10,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
-const linkTimeout = 5 * time.Second
+const linkTimeout = 10 * time.Second
 
 var logger *logrus.Entry = LOGGER.Log.WithField("pkg", "service")
 
@@ -113,6 +114,10 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 	links := doc.Find("a[href]")
 	result.Links.TotalLinks = links.Length()
 
+	// Channel for collecting inaccessible links
+	inaccessibleChan := make(chan string, links.Length())
+	var wg sync.WaitGroup
+
 	links.Each(func(i int, s *goquery.Selection) {
 		href, exists := s.Attr("href")
 		if !exists {
@@ -129,14 +134,29 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 
 		if isInternalLink(base, resolvedURL) {
 			result.Links.InternalLinks++
-			if !isLinkAccessible(resolvedURL.String()) {
-				result.Links.InaccessibleLinks++
-				result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, resolvedURL.String())
-			}
+			wg.Add(1)
+			go func(url string) {
+				defer wg.Done()
+				if !isLinkAccessible(url) {
+					inaccessibleChan <- url
+				}
+			}(resolvedURL.String())
 		} else {
 			result.Links.ExternalLinks++
 		}
 	})
+
+	// Close the channel when all goroutines are done
+	go func() {
+		wg.Wait()
+		close(inaccessibleChan)
+	}()
+
+	// Collect results from the channel
+	for url := range inaccessibleChan {
+		result.Links.InaccessibleLinks++
+		result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, url)
+	}
 }
 
 func isInternalLink(base, target *url.URL) bool {

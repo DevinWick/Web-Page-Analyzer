@@ -2,16 +2,20 @@ package main
 
 import (
 	"github.com/devinwick/web-page-analyzer/handlers"
+	LOGGER "github.com/devinwick/web-page-analyzer/logger"
 	"github.com/gin-gonic/gin"
-	"log/slog"
-	"os"
-	//"web-page-analyzer/handlers"
+	"github.com/sirupsen/logrus"
 )
 
 const PORT string = ":8080"
 
+var logger *logrus.Entry
+
+func init() {
+	logger = LOGGER.Log.WithField("pkg", "main")
+}
+
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	router := gin.Default()
 
 	//setup templates
@@ -26,9 +30,9 @@ func main() {
 	router.POST("/analyze", handlers.AnalyzeHandler)
 
 	//start server
+	logger.Info("Server starting on port ", PORT)
 	err := router.Run(PORT)
 	if err != nil {
 		logger.Error("Server start Failed", err)
 	}
-	logger.Info("Server started on port %s", PORT)
 }

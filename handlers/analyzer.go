@@ -14,9 +14,9 @@ func IndexPathHandler(c *gin.Context) {
 }
 
 func AnalyzeHandler(c *gin.Context) {
-	rawurl := c.PostForm("url")
+	rawUrl := c.PostForm("url")
 
-	url := strings.TrimSpace(rawurl)
+	url := strings.TrimSpace(rawUrl)
 
 	//validate url
 	if url == "" {

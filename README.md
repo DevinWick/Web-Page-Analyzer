@@ -19,6 +19,7 @@ This is a web application that allows you to analyze web page. You can submit a 
 5. API Endpoints
 6. Challenges & Solutions
 7. Future Improvements
+8. Assumptions
 
 ## Technologies
 
@@ -26,6 +27,7 @@ This is a web application that allows you to analyze web page. You can submit a 
 - Go
 - Gin Web Framework https://github.com/gin-gonic/gin
 - Go Query(html parsing) https://github.com/PuerkitoBio/goquery
+- Logrus (logging) https://github.com/sirupsen/logrus
 - Testify (Testing) 
 
 ### Frontend
@@ -155,4 +157,19 @@ Sample Response
 5. Containerize and make timeout periods configurable through env variables
 6. Add Progress indicator for long analysis
 
-
+### Assumptions
+1. HTML Version Detection
+ - Assumption: html version analyzed only using DOCTYPE declaration
+ - Only checks for common DOCTYPE patterns (HTML5, HTML4, XHTML)
+2. Login Form Detection
+- Primarily checks for the presence of ```<input type="password"> fields```
+- If primary check is not found then checks for ```<form>``` tags containing ```'login'``` keyword in ```id,class,action``` attributes
+3. Link Analysis
+- Assumes HEAD requests are sufficient
+- Timeout of 10s per link check
+4. Error Handling
+- Assumes pages return valid HTML page
+- Assumes valid url must contain http or https protocol
+5. Security
+- Assumes URLs are safe to fetch and follows http redirects by default
+- No rate limiting implemented.

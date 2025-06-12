@@ -7,7 +7,7 @@ This is a web application that allows you to analyze web page. You can submit a 
 - Internal Link Count
 - External Link Count
 - Inaccessible Link Count
-- Total Link Count
+- Inaccessible Link Details
 - Whether web page contains a login form
 
 ---
@@ -76,67 +76,20 @@ Below endpoint is provided to analyze the webpage
 POST /analyze
 Content-Type: application/x-www-form-urlencoded
 ```
-Sample Response
+Response
+- response contain html page with below information
 ``` 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Results</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-<div class="container">
-    <h1>Analysis Results</h1>
-
-    
-    <div class="result-section">
-        <h2>Basic Information</h2>
-        <p><strong>URL:</strong> https://google.com</p>
-        <p><strong>HTML Version:</strong> HTML5</p>
-        <p><strong>Title:</strong> Google</p>
-    </div>
-
-    <div class="result-section">
-        <h2>Headings</h2>
-        <ul>
-            
-            <li><strong>h1:</strong> 0</li>
-            
-            <li><strong>h2:</strong> 0</li>
-            
-            <li><strong>h3:</strong> 0</li>
-            
-            <li><strong>h4:</strong> 0</li>
-            
-            <li><strong>h5:</strong> 0</li>
-            
-            <li><strong>h6:</strong> 0</li>
-            
-        </ul>
-    </div>
-
-    <div class="result-section">
-        <h2>Links Analysis</h2>
-        <p><strong>Total Links:</strong> 19</p>
-        <p><strong>Internal Links:</strong> 6</p>
-        <p><strong>External Links:</strong> 13</p>
-        <p><strong>Inaccessible Links:</strong> 0</p>
-
-        
-    </div>
-
-    <div class="result-section">
-        <h2>Login Form</h2>
-        <p>The page does not contain a login form.</p>
-    </div>
-    
-
-    <a href="/" class="back-button">Analyze Another Page</a>
-</div>
-</body>
-</html>
+Site Details
+    -URL
+    -Title
+    -HTML Version
+    -Is Containg a Login Form
+Headings Count
+Links Count
+    -Internal Links
+    -External Links
+    -Inaccessible Links
+    -Inaccessible Links Details
 ```
 ### Challanges and Solutions
 1. HTML Parsing & Anlaysis
@@ -148,6 +101,10 @@ Sample Response
 3. Performance Optimization
 - Challenge: Some links timeouts after taking a long period
 - Solution: timeouts the long-lasting requests in the predefined timeout period and count as inaccessible link
+4. Bot mitigation Tools
+- Challenges: Some web pages are not reachable due to bot mitigation techniques used
+- Solution: need to develop a solution to emulate human like behaviour as in browser 
+- Handling cookies and required request headers looks by specific bot mitigation solution
 
 ### Future Improvements
 1. Implement caching of analyzed results for better response time and minimize resource utlization

@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+const webPageURLTimeout = 10 * time.Second
 const linkTimeout = 10 * time.Second
 
 var logger *logrus.Entry = LOGGER.Log.WithField("pkg", "service")
@@ -25,16 +26,30 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 	}
 
 	// get the web page
-	resp, err := http.Get(targetURL)
+	client := &http.Client{
+		Timeout: webPageURLTimeout,
+	}
+	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch URL: %v", err)
+		result.StatusCode = 500
+		return result, fmt.Errorf("failed request setup: %v", err)
+	}
+
+	//setup headers
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		result.StatusCode = 500
+		return result, fmt.Errorf("failed to fetch URL: %v", err)
 	}
 	defer resp.Body.Close()
 
 	result.StatusCode = resp.StatusCode
 
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
+		return result, fmt.Errorf("URL response status code is not 200: %d", resp.StatusCode)
 	}
 
 	// Parse the HTML
@@ -62,6 +77,8 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 	start = time.Now()
 	analyzeLinks(doc, targetURL, result)
 	logger.WithField("duration", time.Since(start)).Info("analyzeLinks")
+
+	result.Links.Timeout = linkTimeout.String()
 
 	// Check for login form
 	result.HasLoginForm = checkForLoginForm(doc)
@@ -183,7 +200,12 @@ func isLinkAccessible(url string) bool {
 }
 
 func checkForLoginForm(doc *goquery.Document) bool {
-	// Check for password inputs
+	// Check for username fields
+	if doc.Find("input[type='text'][name='username'],input[type='email'][name='username']").Length() > 0 {
+		return true
+	}
+
+	// Check for password fields
 	if doc.Find("input[type='password']").Length() > 0 {
 		return true
 	}

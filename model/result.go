@@ -17,4 +17,5 @@ type LinkAnalysis struct {
 	InaccessibleLinks     int
 	TotalLinks            int
 	InaccessibleLinksList []string
+	Timeout               string
 }

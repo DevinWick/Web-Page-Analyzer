@@ -11,15 +11,17 @@
     <h1>Web Page Analyzer</h1>
     <form action="/analyze" method="POST">
         <div class="form-group">
-            <label for="url">Enter URL to analyze:</label>
-            <input type="text" id="url" name="url" placeholder="Paste your URL here (https://testpage.com)" required>
+            <label for="url">Enter URL:</label>
+            <input type="text" id="url" name="url" placeholder="Paste URL for analysis (https://testpage.com)" required>
         </div>
-        <button type="submit">Analyze</button>
+        <button type="submit">Submit</button>
     </form>
+
+    <!-- Error    -->
     {{ if .error }}
     <div class="error">{{ .error }}</div>
     {{ end }}
+
 </div>
 </body>
-<script src="/static/main.js"></script>
 </html>

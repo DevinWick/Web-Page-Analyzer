@@ -3,29 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Results</title>
+    <title>Page Analysis Results</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 <div class="container">
-    <h1>Analysis Results</h1>
+    <h1>Page Analysis Results</h1>
 
+<!--    Error Section   -->
     {{ if .result.Error }}
-    <div class="error">
-        <h2>Error Analyzing {{ .result.URL }}</h2>
+    <div class="error-container">
+        <h2>Error Occurred!</h2>
+        <h3>Error while Analyzing {{ .result.URL }}</h3>
         <p><strong>Status Code:</strong> {{ .result.StatusCode }}</p>
         <p><strong>Error:</strong> {{ .result.Error }}</p>
     </div>
+<!--    End of Error Section    -->
     {{ else }}
-    <div class="result-section">
-        <h2>Basic Information</h2>
+    <div class="result-container">
+        <h2>Site Details</h2>
         <p><strong>URL:</strong> {{ .result.URL }}</p>
-        <p><strong>HTML Version:</strong> {{ .result.HTMLVersion }}</p>
         <p><strong>Title:</strong> {{ .result.Title }}</p>
+        <p><strong>HTML Version:</strong> {{ .result.HTMLVersion }}</p>
+        <p><strong>Contains a Login Form:</strong> {{ if .result.HasLoginForm }}Yes{{ else }}No{{ end }}</p>
     </div>
 
-    <div class="result-section">
-        <h2>Headings</h2>
+    <div class="result-container">
+        <h2>Headings Count</h2>
         <ul>
             {{ range $key, $value := .result.Headings }}
             <li><strong>{{ $key }}:</strong> {{ $value }}</li>
@@ -33,30 +37,27 @@
         </ul>
     </div>
 
-    <div class="result-section">
-        <h2>Links Analysis</h2>
-        <p><strong>Total Links:</strong> {{ .result.Links.TotalLinks }}</p>
+    <div class="result-container">
+        <h2>Links Count</h2>
         <p><strong>Internal Links:</strong> {{ .result.Links.InternalLinks }}</p>
         <p><strong>External Links:</strong> {{ .result.Links.ExternalLinks }}</p>
         <p><strong>Inaccessible Links:</strong> {{ .result.Links.InaccessibleLinks }}</p>
 
         {{ if gt .result.Links.InaccessibleLinks 0 }}
-        <h3>Inaccessible Links:</h3>
-        <ul>
+        <h3>Inaccessible Links Details:</h3>
+        <p>Links that were not accessible within timeout period <strong> ({{.result.Links.Timeout}}) </strong></p>
+        <div class="scroll-list">
+        <ul >
             {{ range .result.Links.InaccessibleLinksList }}
             <li>{{ . }}</li>
             {{ end }}
         </ul>
+        </div>
         {{ end }}
-    </div>
-
-    <div class="result-section">
-        <h2>Login Form</h2>
-        <p>The page {{ if .result.HasLoginForm }}contains{{ else }}does not contain{{ end }} a login form.</p>
     </div>
     {{ end }}
 
-    <a href="/" class="back-button">Analyze Another Page</a>
+    <a href="/" class="back-button">Run Another</a>
 </div>
 </body>
 </html>

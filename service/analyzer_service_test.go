@@ -94,8 +94,13 @@ func TestCheckForLoginForm(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "Login form with username",
+			html:     `<form><input type="email" name="username"></form>`,
+			expected: true,
+		},
+		{
 			name:     "No login form",
-			html:     `<form><input type="text" name="username"></form>`,
+			html:     `<form><input type="text" name="firstName"></form>`,
 			expected: false,
 		},
 	}

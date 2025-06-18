@@ -60,6 +60,14 @@ go mod download
 go build -o web-analyzer
 ./web-analyzer
 ```
+### Run Using Docker
+Build docker image
+
+```docker build . -t web-analyzer```
+
+Run the image
+
+```docker run web-analyzer -p8080:8080```
 
 ### Usage
 1. Access the application at ```http://localhost:8080/```

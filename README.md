@@ -119,8 +119,8 @@ Links Count
  - Assumption: html version analyzed only using DOCTYPE declaration
  - Only checks for common DOCTYPE patterns (HTML5, HTML4, XHTML)
 2. Login Form Detection
-- Primarily checks for the presence of ```<input type="password"> fields```
-- If primary check is not found then checks for ```<form>``` tags containing ```'login'``` keyword in ```id,class,action``` attributes
+- Assumes that all login forms contains ```form``` tag
+- Assumes that username, password and submit button must be inside a ```form``` tag to be a login form
 3. Link Analysis
 - Assumes HEAD requests are sufficient
 - Timeout of 10s per link check

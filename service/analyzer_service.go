@@ -26,57 +26,56 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 	}
 
 	// get the web page
-	client := &http.Client{
-		Timeout: webPageURLTimeout,
-	}
+	client := &http.Client{Timeout: webPageURLTimeout}
+
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		result.StatusCode = 500
-		return result, fmt.Errorf("failed request setup: %v", err)
+		return result, err
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		result.StatusCode = 500
-		return result, fmt.Errorf("failed to fetch URL: %v", err)
+		return result, err
 	}
 	defer resp.Body.Close()
 
 	result.StatusCode = resp.StatusCode
-
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf("URL response status code is not 200: %d", resp.StatusCode)
+		return result, fmt.Errorf("web page returned status: %d", resp.StatusCode)
 	}
 
 	rootNode, err := html.Parse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %v", err)
+		return nil, err
 	}
 
-	start := time.Now()
-	result.HTMLVersion = determineHTMLVersion(rootNode)
-	logger.WithField("duration", time.Since(start)).Info("determined HTML version")
+	trackTime("determineHTMLVersion", func() {
+		result.HTMLVersion = determineHTMLVersion(rootNode)
+	})
 
 	doc := goquery.NewDocumentFromNode(rootNode)
-
 	result.Title = doc.Find("title").Text()
 
-	start = time.Now()
-	analyzeHeadings(doc, result)
-	logger.WithField("duration", time.Since(start)).Info("analyzeHeadings")
+	trackTime("analyzeHeadings", func() { analyzeHeadings(doc, result) })
 
 	// analyze inaccessible links
-	start = time.Now()
 	analyzeLinks(doc, targetURL, result)
-	logger.WithField("duration", time.Since(start)).Info("analyzeLinks")
 
 	result.Links.Timeout = linkTimeout.String()
-
 	result.HasLoginForm = checkForLoginForm(doc)
 
 	return result, nil
+}
+
+func trackTime(data string, fn func()) {
+	start := time.Now()
+	fn()
+	logger.WithField("duration", time.Since(start)).Info(data)
 }
 
 func determineHTMLVersion(rootNode *html.Node) string {
@@ -121,6 +120,9 @@ func analyzeHeadings(doc *goquery.Document, result *model.AnalysisResult) {
 }
 
 func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisResult) {
+	start := time.Now()
+	defer logger.WithField("duration", time.Since(start)).Info("analyzeLinks")
+
 	base, err := url.Parse(baseURL)
 	if err != nil {
 		return
@@ -129,8 +131,7 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 	links := doc.Find("a[href]")
 	result.Links.TotalLinks = links.Length()
 
-	// Channel for collecting inaccessible links
-	inaccessibleChan := make(chan string, links.Length())
+	inAccChan := make(chan string, links.Length())
 	var wg sync.WaitGroup
 
 	links.Each(func(i int, s *goquery.Selection) {
@@ -153,7 +154,7 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 			go func(url string) {
 				defer wg.Done()
 				if !isLinkAccessible(url) {
-					inaccessibleChan <- url
+					inAccChan <- url
 				}
 			}(resolvedURL.String())
 		} else {
@@ -164,11 +165,11 @@ func analyzeLinks(doc *goquery.Document, baseURL string, result *model.AnalysisR
 	// Close the channel when all goroutines are done
 	go func() {
 		wg.Wait()
-		close(inaccessibleChan)
+		close(inAccChan)
 	}()
 
 	// Collect results from the channel
-	for inacUrl := range inaccessibleChan {
+	for inacUrl := range inAccChan {
 		result.Links.InaccessibleLinks++
 		result.Links.InaccessibleLinksList = append(result.Links.InaccessibleLinksList, inacUrl)
 	}
@@ -193,13 +194,22 @@ func isLinkAccessible(url string) bool {
 }
 
 func checkForLoginForm(doc *goquery.Document) bool {
-	// Check username & password fields
-	if doc.Find("input[type='text'][name='username'],input[type='email'][name='username']").Length() > 0 {
-		return true
+	formPatterns := map[string]string{
+		"username": "input[type='text'][name='username'],input[type='email'][name='username'],input[type='text'][name='uname'],input[type='email'][name='uname']",
+		"password": "input[type='password'],input[name='password']",
+		"submit":   "button:contains('Login'),button:contains('Log In'),button:contains('Sign In')",
 	}
 
-	if doc.Find("input[type='password']").Length() > 0 {
-		return true
-	}
-	return false
+	loginFormStatus := false
+	doc.Find("form").Each(func(formIndex int, form *goquery.Selection) {
+		isUserNameField := form.Find(formPatterns["username"]).Length() > 0
+		isPasswordField := form.Find(formPatterns["password"]).Length() > 0
+		isSubmitField := form.Find(formPatterns["submit"]).Length() > 0
+
+		if isUserNameField && isPasswordField && isSubmitField {
+			loginFormStatus = true
+		}
+	})
+
+	return loginFormStatus
 }

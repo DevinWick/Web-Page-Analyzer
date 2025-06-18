@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Analysis Results</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
+<div class="main-box">
     <h1>Page Analysis Results</h1>
 
-<!--    Error Section   -->
     {{ if .result.Error }}
-    <div class="error-container">
+    <div class="error-card">
         <h2>Error Occurred!</h2>
         <h3>Error while Analyzing {{ .result.URL }}</h3>
         <p><strong>Status Code:</strong> {{ .result.StatusCode }}</p>
         <p><strong>Error:</strong> {{ .result.Error }}</p>
     </div>
-<!--    End of Error Section    -->
+
     {{ else }}
-    <div class="result-container">
+    <div class="result-card">
         <h2>Site Details</h2>
         <p><strong>URL:</strong> {{ .result.URL }}</p>
         <p><strong>Title:</strong> {{ .result.Title }}</p>
@@ -28,16 +30,16 @@
         <p><strong>Contains a Login Form:</strong> {{ if .result.HasLoginForm }}Yes{{ else }}No{{ end }}</p>
     </div>
 
-    <div class="result-container">
+    <div class="result-card">
         <h2>Headings Count</h2>
-        <ul>
+        <ol>
             {{ range $key, $value := .result.Headings }}
             <li><strong>{{ $key }}:</strong> {{ $value }}</li>
             {{ end }}
-        </ul>
+        </ol>
     </div>
 
-    <div class="result-container">
+    <div class="result-card">
         <h2>Links Count</h2>
         <p><strong>Internal Links:</strong> {{ .result.Links.InternalLinks }}</p>
         <p><strong>External Links:</strong> {{ .result.Links.ExternalLinks }}</p>
@@ -46,6 +48,8 @@
         {{ if gt .result.Links.InaccessibleLinks 0 }}
         <h3>Inaccessible Links Details:</h3>
         <p>Links that were not accessible within timeout period <strong> ({{.result.Links.Timeout}}) </strong></p>
+
+
         <div class="scroll-list">
         <ul >
             {{ range .result.Links.InaccessibleLinksList }}

@@ -80,28 +80,46 @@ func TestCheckForLoginForm(t *testing.T) {
 	}{
 		{
 			name:     "Password input present",
-			html:     `<form><input type="password" name="pass"></form>`,
+			html:     `<form><input type="password" name="pass"><input type="text" name="username"><button type="submit">Login</button></form>`,
 			expected: true,
 		},
 		{
 			name:     "Login in form ID",
-			html:     `<form id="loginForm"></form>`,
-			expected: true,
+			html:     `<form id="loginForm"><button>Login</button></form>`,
+			expected: false,
 		},
 		{
 			name:     "Login in form class",
-			html:     `<form class="user-login"></form>`,
+			html:     `<form class="user-login"><input type="text" name="password"><input type="text" name="username"><button type="submit">Login</button></form>`,
 			expected: true,
 		},
 		{
-			name:     "Login form with username",
-			html:     `<form><input type="email" name="username"></form>`,
-			expected: true,
+			name:     "Login form with only username",
+			html:     `<input type="email" name="username">`,
+			expected: false,
 		},
 		{
 			name:     "No login form",
 			html:     `<form><input type="text" name="firstName"></form>`,
 			expected: false,
+		},
+		{
+			name: "Full Login Page",
+			html: `<form class="modal-content animate" action="/action_page.php" method="post">
+    <div class="container">
+      <label for="uname"><b>Username</b></label>
+      <input type="text" placeholder="Enter Username" name="uname" required>
+
+      <label for="psw"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="psw" required>
+        
+      <button type="submit">Login</button>
+      <label>
+        <input type="checkbox" checked="checked" name="remember"> Remember me
+      </label>
+    </div>
+  </form>`,
+			expected: true,
 		},
 	}
 

@@ -7,7 +7,7 @@ body {
     color: #333;
 }
 
-.container {
+.main-box {
     max-width: 800px;
     margin: 0 auto;
     background: white;
@@ -17,7 +17,7 @@ body {
 }
 
 h1, h2, h3 {
-    color: #2c3e50;
+    color: #05650f;
 }
 
 .form-group {
@@ -52,7 +52,7 @@ button:hover {
     background-color: #2980b9;
 }
 
-.error-container {
+.error-card {
     background-color: #fadbd8;
     margin-top: 15px;
     color: #e74c3c;
@@ -61,13 +61,13 @@ button:hover {
 
 }
 
-.result-container {
+.result-card {
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid #afa5a5;
 }
 
-.result-container:last-child {
+.result-card:last-child {
     border-bottom: none;
 }
 

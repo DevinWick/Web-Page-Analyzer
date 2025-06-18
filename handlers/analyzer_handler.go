@@ -5,7 +5,7 @@ import (
 	"github.com/devinwick/web-page-analyzer/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	URL "net/url"
+	"net/url"
 	"strings"
 )
 
@@ -14,41 +14,30 @@ func IndexPathHandler(c *gin.Context) {
 }
 
 func AnalyzeHandler(c *gin.Context) {
-	rawUrl := c.PostForm("url")
 
-	url := strings.TrimSpace(rawUrl)
+	pageUrl := strings.TrimSpace(c.PostForm("url"))
 
-	//validate url
-	if url == "" {
-		c.HTML(http.StatusBadRequest, "index.html", gin.H{
-			"error": "URL is required",
-		})
-		return
-	}
-
-	_, err := URL.ParseRequestURI(url)
+	_, err := url.ParseRequestURI(pageUrl)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "index.html", gin.H{
-			"error": "Invalid URL .",
+			"error": "Invalid URL. Please include a valid URL",
 		})
 		return
 	}
 
-	//analyze web page
-	result, err := service.AnalyzeWebPage(url)
+	resp := map[string]any{}
+
+	result, err := service.AnalyzeWebPage(pageUrl)
 	if err != nil {
-		errorResult := model.AnalysisResult{
-			URL:        url,
-			Error:      err.Error(),
-			StatusCode: result.StatusCode,
-		}
-		c.HTML(http.StatusOK, "results.html", gin.H{
-			"result": errorResult,
-		})
-		return
+		errorResult := model.AnalysisResult{}
+		errorResult.URL = pageUrl
+		errorResult.Error = err.Error()
+		errorResult.StatusCode = result.StatusCode
+
+		resp["result"] = errorResult
+	} else {
+		resp["result"] = result
 	}
 
-	c.HTML(http.StatusOK, "results.html", gin.H{
-		"result": result,
-	})
+	c.HTML(http.StatusOK, "results.html", resp)
 }

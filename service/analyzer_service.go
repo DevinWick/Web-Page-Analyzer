@@ -35,10 +35,8 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 		return result, fmt.Errorf("failed request setup: %v", err)
 	}
 
-	//setup headers
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-
 	resp, err := client.Do(req)
 	if err != nil {
 		result.StatusCode = 500
@@ -52,35 +50,30 @@ func AnalyzeWebPage(targetURL string) (*model.AnalysisResult, error) {
 		return result, fmt.Errorf("URL response status code is not 200: %d", resp.StatusCode)
 	}
 
-	// Parse the HTML
 	rootNode, err := html.Parse(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %v", err)
 	}
 
-	// Analyze HTML version
 	start := time.Now()
 	result.HTMLVersion = determineHTMLVersion(rootNode)
 	logger.WithField("duration", time.Since(start)).Info("determined HTML version")
 
 	doc := goquery.NewDocumentFromNode(rootNode)
 
-	// Analyze title
 	result.Title = doc.Find("title").Text()
 
-	// Analyze headings
 	start = time.Now()
 	analyzeHeadings(doc, result)
 	logger.WithField("duration", time.Since(start)).Info("analyzeHeadings")
 
-	// Analyze links
+	// analyze inaccessible links
 	start = time.Now()
 	analyzeLinks(doc, targetURL, result)
 	logger.WithField("duration", time.Since(start)).Info("analyzeLinks")
 
 	result.Links.Timeout = linkTimeout.String()
 
-	// Check for login form
 	result.HasLoginForm = checkForLoginForm(doc)
 
 	return result, nil
@@ -200,20 +193,13 @@ func isLinkAccessible(url string) bool {
 }
 
 func checkForLoginForm(doc *goquery.Document) bool {
-	// Check for username fields
+	// Check username & password fields
 	if doc.Find("input[type='text'][name='username'],input[type='email'][name='username']").Length() > 0 {
 		return true
 	}
 
-	// Check for password fields
 	if doc.Find("input[type='password']").Length() > 0 {
 		return true
 	}
-
-	// Check for common login form attributes
-	if doc.Find("form[id*='login'], form[class*='login'], form[action*='login']").Length() > 0 {
-		return true
-	}
-
 	return false
 }

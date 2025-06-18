@@ -7,8 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PORT string = ":8080"
-
 var logger *logrus.Entry
 
 func init() {
@@ -16,23 +14,20 @@ func init() {
 }
 
 func main() {
-	router := gin.Default()
 
-	//setup templates
-	router.LoadHTMLFiles("pages/index.html", "pages/results.html")
+	r := gin.Default()
+	port := ":8080"
 
-	//serve static files
-	router.Static("/static", "./static")
+	r.LoadHTMLFiles("pages/index.html", "pages/results.html")
+	r.Static("/static", "./static")
 
-	//Configure Routes
-	router.GET("/", handlers.IndexPathHandler)
+	r.GET("/", handlers.IndexPathHandler)
+	r.POST("/analyze", handlers.AnalyzeHandler)
 
-	router.POST("/analyze", handlers.AnalyzeHandler)
+	logger.Info("Server starting on port ", port)
 
-	//start server
-	logger.Info("Server starting on port ", PORT)
-	err := router.Run(PORT)
+	err := r.Run(port)
 	if err != nil {
-		logger.Error("Server start Failed", err)
+		logger.Fatal("Server start Failed", err)
 	}
 }
